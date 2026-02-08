@@ -1,7 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from enum import StrEnum
-from typing import List
-import json
+
 
 class Size(StrEnum):
     LARGE = 'l'
@@ -18,14 +17,13 @@ class Transmission(StrEnum):
     AUTOMATIC = 'auto'
     MANUAL = 'manual'
 
-class Car(BaseModel):
-    id: int
+class CarInput(BaseModel):
     size: Size
     fuel: Fuel | None = Fuel.GASOLINE
     doors: int 
     transmission: Transmission | None = Transmission.MANUAL
+    
+    model_config = ConfigDict(from_attributes=True)
 
-
-def load_db() -> List[Car]:
-    with open('cars.json') as f:
-        return [Car(**obj) for obj in json.load(f)]
+class CarOutput(CarInput):
+    id: int
