@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from models.car import Car
-from schemas.car import CarInput, CarOutput
+from models.car import Car, Base, Trip
+from schemas.car import CarInput, CarOutput, TripInput, TripOutput
 
 
 engine = create_engine(
@@ -11,7 +11,11 @@ engine = create_engine(
 )
 
 
-def session():
+Base.metadata.create_all(engine)
+
+
+def get_session():
+    # return Session(engine)
     with Session(engine) as session:
         yield session
 
@@ -58,6 +62,26 @@ def db_delete_car(session: Session, car_id: int) -> bool:
     car = session.get(Car, car_id)
     if car:
         session.delete(car)
+        session.commit()
+        return True
+    return False
+
+
+def add_trip(session: Session, car_id: int, trip: TripInput) -> TripOutput | None:
+    car = session.get(Car, car_id)
+    if car:
+        new_trip = Trip(**trip.model_dump(), car_id=car_id)
+        car.trips.append(new_trip)
+        session.commit()
+        session.refresh(new_trip)
+        return TripOutput.model_validate(new_trip)
+    return None
+
+
+def delete_trip(session: Session, car_id: int, trip_id: int) -> bool:
+    trip = session.query(Trip).filter(Trip.id == trip_id, Car.id == car_id).first()
+    if trip:
+        session.delete(trip)
         session.commit()
         return True
     return False
